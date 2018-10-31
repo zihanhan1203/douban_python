@@ -69,6 +69,7 @@ class CommentSpider(object):
                 print 'Connect successfully!!!'
                 time.sleep(0.1)
                 break
+        # put the proxy ips which cannot create valid connection in the end of the file to save time
         for i in range(the_index_of_useful_ip, 50):
             file_write_ob.write(res_ip[i])
         for i in set_of_failed_ip:
@@ -79,7 +80,7 @@ class CommentSpider(object):
         tree = etree.HTML(html)
 
         # connect to db
-        db = pymysql.connect("localhost", "root", "hjp00hxl", "douban_rocketgirl101_group")
+        db = pymysql.connect("localhost", "root", "123456", "douban_rocketgirl101_group")
         cursor = db.cursor()
         table_name = 'temp_' + self.url_id
 
@@ -116,7 +117,6 @@ class CommentSpider(object):
 
         temp = or_personpage[0].split('/')
         id_of_poster = temp[len(temp) - 2]
-        # PROBLEM: name has to be repeatedly added everytime
         add_post = "INSERT INTO %s(ID,name,post) VALUES ('%s', '%s', '%d')" % (table_name, id_of_poster, cur_poster, 1)
         try:
             cursor.execute(add_post)
@@ -142,6 +142,7 @@ class CommentSpider(object):
 
         for name in or_names:
             cur = name.encode('utf8')
+            # There may be special character cause exception
             if '"' in cur:
                 cur = cur.replace('"', '\\"')
             if "'" in cur:
@@ -230,6 +231,7 @@ class CommentSpider(object):
 
                 for name in or_names:
                     cur = name.encode('utf8')
+                    # There may have special character which will cause exception
                     if '"' in cur:
                         cur = cur.replace('"', '\\"')
                     elif "'" in cur:

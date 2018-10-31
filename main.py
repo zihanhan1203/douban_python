@@ -32,7 +32,7 @@ if __name__ == '__main__':
             times += 1
             now_time = datetime.datetime.now(tz)
             # connect to db
-            db = pymysql.connect("127.0.0.1", "root", "hjp00hxl", "douban_rocketgirl101_group")
+            db = pymysql.connect("127.0.0.1", "root", "123456", "douban_rocketgirl101_group")
             cursor = db.cursor()
 
             # if restarted, put the data into today's table
