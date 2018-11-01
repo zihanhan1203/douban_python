@@ -36,7 +36,7 @@ class CommentSpider(object):
         except Exception, e:
             return False
         # connect to db
-        db = pymysql.connect("localhost", "root", "hjp00hxl", "douban_rocketgirl101_group")
+        db = pymysql.connect("localhost", "root", "123456", "douban_rocketgirl101_group")
         cursor = db.cursor()
         table_name = 'temp_' + self.url_id
 
