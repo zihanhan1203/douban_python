@@ -12,11 +12,11 @@ if __name__ == '__main__':
     run_main_function = True
     if run_main_function:
         tz = pytz.timezone('Asia/Shanghai')  # Attention TIP!!! HOW TO PROCESS TIMEZONE
-        pre_day = 31
+        pre_day = 1
         set_of_url = set()  # To restore each day's urls of the posts
         if_today_table_is_create = False
         times = 1
-        today_table_name = "2018_10_31"
+        today_table_name = "2018_11_1"
         if_restart = True
         while True:
             # if main is interrupted, we need to put the url checked into the set
@@ -32,7 +32,7 @@ if __name__ == '__main__':
             times += 1
             now_time = datetime.datetime.now(tz)
             # connect to db
-            db = pymysql.connect("127.0.0.1", "root", "123456", "douban_rocketgirl101_group")
+            db = pymysql.connect("127.0.0.1", "root", "hjp00hxl", "douban_rocketgirl101_group")
             cursor = db.cursor()
 
             # if restarted, put the data into today's table
@@ -133,9 +133,11 @@ if __name__ == '__main__':
                                                name, post, comment, comment_got)
                         cursor.execute(put_to_base_data)
 
-                # fix the value of today_table_name, and set if_today_table_is_created to false
-                if_today_table_is_create = False
+                # fix the value of today_table_name and create today table
                 today_table_name = str(now_time.year) + '_' + str(now_time.month) + '_' + str(now_time.day)
+                create_to_day_table = "CREATE table %s like base_data" % today_table_name
+                cursor.execute(create_to_day_table)
+                db.commit()
 
                 # delete temp table
                 drop_table = "SELECT CONCAT('DROP TABLE ',table_name, ';') FROM information_schema.tables " \
@@ -224,38 +226,3 @@ if __name__ == '__main__':
                 interval = 0
             print "Starting to sleep for %d seconds" % interval
             time.sleep(interval)
-
-    # connect to db
-    # db = pymysql.connect("localhost", "root", "hjp00hxl", "douban_rocketgirl101_group")
-    # cursor = db.cursor()
-
-    # get_num = "SELECT COUNT(ID) from base_data"
-    # cursor.execute(get_num)
-    # print cursor.fetchall()[0][0]
-
-    # delete temp table
-    # drop_table = "SELECT CONCAT('DROP TABLE ',table_name, ';')
-    # FROM information_schema.tables Where table_name LIKE 'temp_%'"
-    # cursor.execute(drop_table)
-    # res = cursor.fetchall()
-    # for r in res:
-    #     cursor.execute(r[0])
-    # db.commit()
-
-    # get the tables
-    # get_table = "SELECT table_name FROM information_schema.tables WHERE table_schema = 'douban_rocketgirl101_group'" \
-    #             " AND table_name LIKE 'temp_%'"
-    # cursor.execute(get_table)
-    # res = cursor.fetchall()
-    #
-    # print len(res)
-
-    # test below
-
-    # get_page_num = comment_spider.CommentSpider()
-    # url = 'https://www.douban.com/group/topic/125819143/'
-    # get_page_num.start(url)
-
-    # test_error = test_error.TestError()
-    # url = 'https://www.douban.com/group/topic/125638101/?start=3100'
-    # test_error.start(url)
