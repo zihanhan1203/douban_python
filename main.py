@@ -12,13 +12,75 @@ if __name__ == '__main__':
     run_main_function = True
     if run_main_function:
         tz = pytz.timezone('Asia/Shanghai')  # Attention TIP!!! HOW TO PROCESS TIMEZONE
-        pre_day = 1
+        pre_day = 2
         set_of_url = set()  # To restore each day's urls of the posts
-        if_today_table_is_create = False
-        times = 1
-        today_table_name = "2018_11_1"
+        if_today_table_is_create = True
+        times = 2
+        today_table_name = "2018_11_2"
         if_restart = True
         while True:
+            # connect to db
+            db = pymysql.connect("localhost", "root", "123456", "douban_rocketgirl101_group")
+            cursor = db.cursor()
+            now_time = datetime.datetime.now(tz)
+            # if it is a new day, put the data of todaytable into base_data, and fix the value of today_table_name
+            # and clear the set_of_url
+            if now_time.day != pre_day:
+                get_data = "SELECT * FROM %s" % today_table_name
+                cursor.execute(get_data)
+                datas = cursor.fetchall()
+                for data in datas:
+                    id = data[0]
+                    name = data[1]
+                    if '"' in name:
+                        name = name.replace('"', '\\"')
+                    elif "'" in name:
+                        name = name.replace("'", "\\'")
+                    post = data[2]
+                    comment = data[3]
+                    comment_got = data[4]
+                    put_to_base_data = "INSERT INTO base_data(ID,name,post,comment,comment_got)" \
+                                       " VALUES ('%s', '%s', '%d', '%d', '%d')" \
+                                       " ON DUPLICATE KEY UPDATE name = '%s'," \
+                                       "post=post+%d, comment=comment+%d, " \
+                                       "comment_got=comment_got+%d" % (
+                                           id, name, post, comment, comment_got,
+                                           name, post, comment, comment_got)
+                    try:
+                        cursor.execute(put_to_base_data)
+                    except Exception, e:
+                        name = "The_name_has_problem"
+                        put_to_base_data = "INSERT INTO base_data(ID,name,post,comment,comment_got)" \
+                                           " VALUES ('%s', '%s', '%d', '%d', '%d')" \
+                                           " ON DUPLICATE KEY UPDATE name = '%s'," \
+                                           "post=post+%d, comment=comment+%d, " \
+                                           "comment_got=comment_got+%d" % (
+                                               id, name, post, comment, comment_got,
+                                               name, post, comment, comment_got)
+                        cursor.execute(put_to_base_data)
+
+                # fix the value of today_table_name and create today table
+                today_table_name = str(now_time.year) + '_' + str(now_time.month) + '_' + str(now_time.day)
+                create_to_day_table = "CREATE table %s like base_data" % today_table_name
+                cursor.execute(create_to_day_table)
+                db.commit()
+                # delete temp table
+                drop_table = "SELECT CONCAT('DROP TABLE ',table_name, ';') FROM information_schema.tables " \
+                             "Where table_name LIKE 'temp_%'"
+                cursor.execute(drop_table)
+                res = cursor.fetchall()
+                for r in res:
+                    cursor.execute(r[0])
+                db.commit()
+                print "temp tables are cleared"
+
+                # clear the set set_of_url
+                set_of_url.clear()
+                times = 1
+                pre_day = now_time.day
+
+            print 'Day:' + today_table_name + 'NO.%d time START!' % times
+            times += 1
             # if main is interrupted, we need to put the url checked into the set
             if if_restart:
                 file_path = './result/' + today_table_name + '.txt'
@@ -27,13 +89,6 @@ if __name__ == '__main__':
                 file_object.close()
                 for checked_url in checked_urls:
                     set_of_url.add(checked_url.strip('\n'))
-
-            print 'Day:' + today_table_name + 'NO.%d time START!' % times
-            times += 1
-            now_time = datetime.datetime.now(tz)
-            # connect to db
-            db = pymysql.connect("127.0.0.1", "root", "123456", "douban_rocketgirl101_group")
-            cursor = db.cursor()
 
             # if restarted, put the data into today's table
             if if_restart:
@@ -96,61 +151,6 @@ if __name__ == '__main__':
                 db.commit()
                 if_today_table_is_create = True
 
-            # if it is a new day, put the data of todaytable into base_data, and fix the value of today_table_name
-            # and clear the set_of_url
-            print now_time.day
-            if now_time.day != pre_day:
-                get_data = "SELECT * FROM %s" % today_table_name
-                cursor.execute(get_data)
-                datas = cursor.fetchall()
-                for data in datas:
-                    id = data[0]
-                    name = data[1]
-                    if '"' in name:
-                        name = name.replace('"', '\\"')
-                    elif "'" in name:
-                        name = name.replace("'", "\\'")
-                    post = data[2]
-                    comment = data[3]
-                    comment_got = data[4]
-                    put_to_base_data = "INSERT INTO base_data(ID,name,post,comment,comment_got)" \
-                                       " VALUES ('%s', '%s', '%d', '%d', '%d')" \
-                                       " ON DUPLICATE KEY UPDATE name = '%s'," \
-                                       "post=post+%d, comment=comment+%d, " \
-                                       "comment_got=comment_got+%d" % (
-                                           id, name, post, comment, comment_got,
-                                           name, post, comment, comment_got)
-                    try:
-                        cursor.execute(put_to_base_data)
-                    except Exception, e:
-                        name = "The_name_has_problem"
-                        put_to_base_data = "INSERT INTO base_data(ID,name,post,comment,comment_got)" \
-                                           " VALUES ('%s', '%s', '%d', '%d', '%d')" \
-                                           " ON DUPLICATE KEY UPDATE name = '%s'," \
-                                           "post=post+%d, comment=comment+%d, " \
-                                           "comment_got=comment_got+%d" % (
-                                               id, name, post, comment, comment_got,
-                                               name, post, comment, comment_got)
-                        cursor.execute(put_to_base_data)
-
-                # fix the value of today_table_name and create today table
-                today_table_name = str(now_time.year) + '_' + str(now_time.month) + '_' + str(now_time.day)
-                create_to_day_table = "CREATE table %s like base_data" % today_table_name
-                cursor.execute(create_to_day_table)
-                db.commit()
-
-                # delete temp table
-                drop_table = "SELECT CONCAT('DROP TABLE ',table_name, ';') FROM information_schema.tables " \
-                             "Where table_name LIKE 'temp_%'"
-                cursor.execute(drop_table)
-                res = cursor.fetchall()
-                for r in res:
-                    cursor.execute(r[0])
-                db.commit()
-
-                # clear the set set_of_url
-                set_of_url.clear()
-
             # create the spider object which used to read the front 125 posts' urls
             getToPage = spider.PageSpider()
             current_page = 0
@@ -159,7 +159,7 @@ if __name__ == '__main__':
 
             # set the interval
             interval = 30 * 60
-            if 3 <= now_time.hour <= 8:
+            if 3 <= now_time.hour < 8:
                 interval = 5 * 60 * 60
             while current_page <= 125:
                 set_of_url = set_of_url | getToPage.start(current_page, set_of_url, today_table_name)
