@@ -35,6 +35,9 @@ class CommentSpider(object):
             poster_name = original_poster_name[0]
         except Exception, e:
             return False
+
+        temp = original_poster_id[0].split('/')
+        id_of_poster = temp[len(temp) - 2]
         # connect to db
         db = pymysql.connect("localhost", "root", "123456", "douban_rocketgirl101_group")
         cursor = db.cursor()
@@ -43,8 +46,9 @@ class CommentSpider(object):
         # if is new post, check if the post is today, if not ,return
         if not self.is_browsed:
             tz = pytz.timezone('Asia/Shanghai')  # Attention TIP!!! HOW TO PROCESS TIMEZONE
-            to_month = datetime.datetime.now(tz).month
-            to_day = datetime.datetime.now(tz).day
+            today_time = datetime.datetime.now(tz)
+            to_month = today_time.month
+            to_day = today_time.day
             time_of_the_post = tree.xpath("//*[@id='content']//div[@class='topic-doc']/h3/"
                                           "span[@class='color-green']/text()")[0]
             data = re.findall(r"\d+", time_of_the_post)
@@ -53,6 +57,14 @@ class CommentSpider(object):
             if post_day != to_day or post_month != to_month:
                 print 'The post is not today!'
                 return False
+            print "Create table if the poster's table does not exist"
+            date_of_post = today_time.strftime("%Y_%m_%d")
+            poster_table = id_of_poster + '_posts'
+            create_poster_table = "CREATE TABLE IF NOT EXISTS %s like model" % poster_table
+            cursor.execute(create_poster_table)
+            insert_url = "INSERT INTO %s(posturl, day) VALUES ('%s', '%s')" % (poster_table, self.current_url,
+                                                                               date_of_post)
+            cursor.execute(insert_url)
             print 'Create table %s' % table_name
             create_table = "CREATE TABLE %s LIKE base_data" % table_name
             # if program has been corrupted, sometimes this statement will have exception
@@ -75,8 +87,6 @@ class CommentSpider(object):
         print 'The poster name is %s' % cur_poster
 
         # put the id and name of the poster into table
-        temp = original_poster_id[0].split('/')
-        id_of_poster = temp[len(temp) - 2]
         add_post = "INSERT INTO %s(ID,name,post) VALUES ('%s', '%s', '%d')" % (table_name, id_of_poster, cur_poster, 1)
         try:
             cursor.execute(add_post)
