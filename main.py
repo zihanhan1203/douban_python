@@ -12,11 +12,11 @@ if __name__ == '__main__':
     run_main_function = True
     if run_main_function:
         tz = pytz.timezone('Asia/Shanghai')  # Attention TIP!!! HOW TO PROCESS TIMEZONE
-        pre_day = 2
+        pre_day = 3
         set_of_url = set()  # To restore each day's urls of the posts
-        if_today_table_is_create = True
-        times = 2
-        today_table_name = "2018_11_2"
+        if_today_table_is_create = False
+        times = 1
+        today_table_name = "2018_11_03"
         if_restart = True
         while True:
             # connect to db
@@ -60,7 +60,7 @@ if __name__ == '__main__':
                         cursor.execute(put_to_base_data)
 
                 # fix the value of today_table_name and create today table
-                today_table_name = str(now_time.year) + '_' + str(now_time.month) + '_' + str(now_time.day)
+                today_table_name = now_time.strftime("%Y_%m_%d")
                 create_to_day_table = "CREATE table %s like base_data" % today_table_name
                 cursor.execute(create_to_day_table)
                 db.commit()
