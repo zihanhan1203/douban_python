@@ -39,7 +39,7 @@ class CommentSpider(object):
         temp = original_poster_id[0].split('/')
         id_of_poster = temp[len(temp) - 2]
         # connect to db
-        db = pymysql.connect("localhost", "root", "123456", "douban_rocketgirl101_group")
+        db = pymysql.connect("localhost", "root", "hjp00hxl", "douban_rocketgirl101_group")
         cursor = db.cursor()
         table_name = 'temp_' + self.url_id
 
@@ -59,12 +59,15 @@ class CommentSpider(object):
                 return False
             print "Create table if the poster's table does not exist"
             date_of_post = today_time.strftime("%Y_%m_%d")
-            poster_table = id_of_poster + '_posts'
-            create_poster_table = "CREATE TABLE IF NOT EXISTS %s like model" % poster_table
-            cursor.execute(create_poster_table)
-            insert_url = "INSERT INTO %s(posturl, day) VALUES ('%s', '%s')" % (poster_table, self.current_url,
-                                                                               date_of_post)
-            cursor.execute(insert_url)
+            try:
+                poster_table = id_of_poster + '_posts'
+                create_poster_table = "CREATE TABLE IF NOT EXISTS `%s` like model" % poster_table
+                cursor.execute(create_poster_table)
+                insert_url = "INSERT INTO `%s`(posturl, day) VALUES ('%s', '%s')" % (poster_table, self.current_url,
+                                                                  date_of_post)
+                cursor.execute(insert_url)
+            except Exception, e:
+                print str(e)
             print 'Create table %s' % table_name
             create_table = "CREATE TABLE %s LIKE base_data" % table_name
             # if program has been corrupted, sometimes this statement will have exception
@@ -84,6 +87,8 @@ class CommentSpider(object):
             cur_poster = cur_poster.replace('"', '\\"')
         if "'" in cur_poster:
             cur_poster = cur_poster.replace("'", "\\'")
+        if "-" in cur_poster:
+            cur_poster = cur_poster.replace("-", "\\-")
         print 'The poster name is %s' % cur_poster
 
         # put the id and name of the poster into table
